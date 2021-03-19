@@ -9,3 +9,4 @@ python-slugify==4.0.1
 gunicorn==20.0.4
 uvloop==0.15.2
 python-dotenv==0.15.0
+psycopg2==2.8.6
