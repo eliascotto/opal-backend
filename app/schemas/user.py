@@ -5,7 +5,7 @@ from pydantic import BaseModel, EmailStr, constr
 
 class UserBase(BaseModel):
     name: constr(max_length=30)
-    email: EmailStr
+    email: str
 
 
 class UserCreate(UserBase):

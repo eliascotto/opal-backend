@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List, Optional
+from email_validator import validate_email, EmailNotValidError
 
 from .. import crud, schemas
 from ..database import get_db, engine
@@ -37,6 +38,16 @@ async def read_user(user_id: str, db: Session = Depends(get_db)):
 
 @router.post("/new", response_model=schemas.User)
 async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    try:
+        # Validate.
+        valid = validate_email(user.email)
+
+        # Update with the normalized form.
+        user.email  = valid.email
+    except EmailNotValidError as e:
+        # email is not valid, exception message is human-readable
+        raise HTTPException(status_code=400, detail=str(e))
+
     db_user = crud.get_user_by_email(db, user.email)
     if db_user:
         raise HTTPException(status_code=400, detail="Email already registered")
