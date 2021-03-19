@@ -2,20 +2,23 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from config import (
+    ENV_NAME,
     DATABASE_HOST,
     DATABASE_USERNAME,
     DATABASE_PASSWORD,
     DATABASE_PORT,
     DATABASE_NAME,
+    DATABASE_URL
 )
 
-DATABASE_URL = "postgresql://{}:{}@{}:{}/{}".format(
-    DATABASE_USERNAME,
-    DATABASE_PASSWORD,
-    DATABASE_HOST,
-    DATABASE_PORT,
-    DATABASE_NAME
-)
+if ENV_NAME == 'development':
+    DATABASE_URL = "postgresql://{}:{}@{}:{}/{}".format(
+        DATABASE_USERNAME,
+        DATABASE_PASSWORD,
+        DATABASE_HOST,
+        DATABASE_PORT,
+        DATABASE_NAME
+    )
 
 # postgresql engine
 engine = create_engine(DATABASE_URL, encoding='utf-8', echo=False)
