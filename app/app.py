@@ -10,6 +10,7 @@ from fastapi.exception_handlers import (
 from fastapi.exceptions import RequestValidationError
 from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.gzip import GZipMiddleware
 
 from config import ENV_NAME
 
@@ -33,25 +34,7 @@ from .routes import (
 models.Base.metadata.create_all(bind=engine)
 
 
-if ENV_NAME == "development":
-    origins = ["*"]
-else:
-    origins = [
-        "https://opal-frontend.vercel.app/",
-        "http://opal-frontend.vercel.app/"
-    ]
-
-middlewares = [
-    Middleware(
-        CORSMiddleware,
-        allow_origins=origins,
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"]
-    )
-]
-
-app = FastAPI(middleware=middlewares)
+app = FastAPI()
 
 #
 # Routes
@@ -75,6 +58,30 @@ async def validation_exception_handler(request, exc):
 @app.get("/")
 async def root():
     return "Application loaded"
+
+
+if ENV_NAME == "development":
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
+else:
+    origins = [
+        "https://opal-frontend.vercel.app/",
+        "http://opal-frontend.vercel.app/"
+    ]
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
+    app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 
 #
 # Basic Security, see docs
