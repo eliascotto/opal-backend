@@ -90,6 +90,22 @@ def shift_blocks(db: Session, block: schemas.Block, decrement: bool=False):
     db.commit()
 
 
+def shift_blocks_position(db: Session, position: int, decrement: bool=False):
+    update_obj = {
+        "position": Block.position - 1
+    } if decrement else {
+        "position": Block.position + 1
+    }
+
+    (
+        db
+        .query(Block)
+        .filter(Block.position > position)
+        .update(update_obj)
+    )
+    db.commit()
+
+
 def get_blocks_count_by_article(db, article_id: str):
     def get_count(q):
         count_q = q.statement.with_only_columns([func.count()]).order_by(None)

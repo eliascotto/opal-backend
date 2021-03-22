@@ -10,6 +10,8 @@ from fastapi.exception_handlers import (
 )
 from fastapi.exceptions import RequestValidationError
 
+from config import ENV_NAME
+
 from .database import get_db, engine
 from .security import (
     authenticate_user,
@@ -31,9 +33,17 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+if ENV_NAME == "development":
+    origins = ["*"]
+else:
+    origins = [
+        "https://opal-frontend.vercel.app/",
+        "http://opal-frontend.vercel.app/"
+    ]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

@@ -8,7 +8,7 @@ from typing_extensions import Literal
 class BlockBase(BaseModel):
     id: UUID
     article_id: constr(max_length=12)
-    type: constr(max_length=16)
+    type: constr(max_length=25)
     position: int
     indent: int
     list: Optional[constr(max_length=1)]
@@ -29,7 +29,7 @@ class Block(BlockBase):
 
 
 class BlockUpdate(BaseModel):
-    type: Optional[constr(max_length=16)]
+    type: Optional[constr(max_length=25)]
     position: Optional[int]
     indent: Optional[int]
     list: Optional[constr(max_length=1)]

@@ -82,10 +82,10 @@ async def create_block(
     if user.id != db_article.author:
         raise HTTPException(status_code=403, detail="Cannot create blocks for article not owned by the user")
 
-    # create block
-    new_block = crud.create_block(db, block=block)
     # shift all the others based on the new block position
-    return crud.shift_blocks(db, block=new_block)
+    crud.shift_blocks_position(db, position=block.position - 1)
+
+    return crud.create_block(db, block=block)
 
 
 @router.patch("/{article_id}/blocks/{block_id}", status_code=status.HTTP_200_OK)

@@ -56,7 +56,7 @@ class Block(Base):
     __tablename__ = 'blocks'
 
     id = Column(UUID(as_uuid=True), primary_key=True)
-    type = Column(String(16), nullable=False)
+    type = Column(String(25), nullable=False)
     position = Column(Integer, nullable=False)
     indent = Column(SmallInteger, nullable=False)
     date_created = Column(DateTime(True), nullable=False, server_default=text("now()"))
