@@ -4,11 +4,12 @@ from sqlalchemy.orm import Session
 from fastapi import Depends, FastAPI, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware import Middleware
-from starlette.middleware.cors import CORSMiddleware
 from fastapi.exception_handlers import (
     request_validation_exception_handler,
 )
 from fastapi.exceptions import RequestValidationError
+from starlette.middleware import Middleware
+from starlette.middleware.cors import CORSMiddleware
 
 from config import ENV_NAME
 
@@ -31,7 +32,6 @@ from .routes import (
 
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI()
 
 if ENV_NAME == "development":
     origins = ["*"]
@@ -41,13 +41,17 @@ else:
         "http://opal-frontend.vercel.app/"
     ]
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+middlewares = [
+    Middleware(
+        CORSMiddleware,
+        allow_origins=origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"]
+    )
+]
+
+app = FastAPI(middleware=middlewares)
 
 #
 # Routes
