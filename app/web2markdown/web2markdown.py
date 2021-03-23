@@ -1,3 +1,4 @@
+import os
 import ast
 import subprocess
 from typing import List, Dict, Optional
@@ -40,8 +41,9 @@ class Block(BaseModel):
 
 
 def webpage2blocks(url):
+    cwd = os.getcwd()
     process = subprocess.Popen(
-        ["node", "/Users/elia/Projects/opal/backend/app/web2markdown/dist/index.js", url],
+        ["node", f"{cwd}/dist/index.js", url],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
