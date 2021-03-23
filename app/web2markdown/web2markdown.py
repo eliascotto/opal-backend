@@ -43,7 +43,7 @@ class Block(BaseModel):
 def webpage2blocks(url):
     cwd = os.getcwd()
     process = subprocess.Popen(
-        ["node", f"{cwd}/web2markdown/dist/index.js", url],
+        ["node", os.path.abspath("dist/index.js"), url],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
