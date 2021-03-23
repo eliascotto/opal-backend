@@ -12,7 +12,7 @@ from starlette.middleware import Middleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.gzip import GZipMiddleware
 
-from config import ENV_NAME
+from config import ENV_NAME, FRONTEND_DOMAIN
 
 from .database import get_db, engine
 from .security import (
@@ -46,12 +46,12 @@ if ENV_NAME == "development":
     )
 else:
     origins = [
-        "https://opal-frontend.vercel.app",
-        "http://opal-frontend.vercel.app"
+        f"https://{FRONTEND_DOMAIN}",
+        f"http://{FRONTEND_DOMAIN}"
     ]
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"]
