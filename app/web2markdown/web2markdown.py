@@ -40,9 +40,15 @@ class Block(BaseModel):
         }
 
 
-def webpage2blocks(url):
+def webpage2blocks(url, env_name):
+    if not env_name or env_name == 'development':
+        path = "/Users/elia/Projects/opal/backend/app/web2markdown/dist/index.js"
+    else:
+        # heroku
+        path = "./app/web2markdown/dist/index.js"
+
     process = subprocess.Popen(
-        ["node", os.path.abspath("web2markdown/dist/index.js"), url],
+        ["node", path, url],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )

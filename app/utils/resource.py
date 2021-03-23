@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from urllib.parse import unquote
 
+from config import ENV_NAME
+
 from ..web2markdown import webpage2blocks
 from ..models import Resource
 from .. import schemas, crud
@@ -67,7 +69,7 @@ def upload_resource_with_url(db: Session, url: str, user_id: str):
         # WARNING is returning an ExternalResource
         return (duplicated, None)
 
-    article = webpage2blocks(url)
+    article = webpage2blocks(url, ENV_NAME)
 
     article_json = article["raw"]
 
