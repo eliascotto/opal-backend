@@ -300,7 +300,7 @@ async def delete_tag(
     if not db_resource or db_resource.hidden:
         raise HTTPException(status_code=404, detail="Resource not found")
 
-    db_tag = crud.get_tag_by_name(db, name=tag.name)
+    db_tag = crud.get_tag_by_name(db, name=tag.name.lower())
     if not db_tag:
         raise HTTPException(status_code=404, detail="Tag not found")
 

@@ -49,7 +49,8 @@ class User(Base):
     last_login = Column(DateTime(True), nullable=False)
     blocked = Column(Boolean, nullable=False)
     image = Column(String)
-    plan = Column(SmallInteger)
+    plan = Column(SmallInteger, nullable=False)
+    onboard = Column(Boolean, nullable=False)
 
 
 class Block(Base):

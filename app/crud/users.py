@@ -27,7 +27,10 @@ def create_user(
         name=user.name,
         display_name=user.name,
         last_login=datetime.now(),
-        blocked=False
+        blocked=False,
+        image=None,
+        plan=0,
+        onboard=False,
     )
     db.add(db_user)
     db.commit()
@@ -71,3 +74,13 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
         .limit(limit)
         .all()
     )
+
+
+def set_user_onboard(db: Session, user_id: int, onboard: bool = True):
+    (
+        db
+        .query(User)
+        .filter(User.id == user_id)
+        .update({ "onboard": onboard })
+    )
+    db.commit()

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from typing import List, Optional
 from email_validator import validate_email, EmailNotValidError
@@ -56,3 +56,11 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     new_user = crud.create_user(db, user, password)
     
     return new_user
+
+
+@router.post("/onboard", status_code=status.HTTP_204_NO_CONTENT)
+async def set_user_onboard(
+    user: schemas.User = Depends(get_active_user),
+    db: Session = Depends(get_db)
+):
+    crud.set_user_onboard(db, user_id=user.id, onboard=True)

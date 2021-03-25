@@ -20,7 +20,8 @@ class User(UserBase):
     last_login: datetime
     blocked: bool
     image: Optional[str]
-    plan: Optional[int]
+    plan: int = 0
+    onboard: bool = False
 
     class Config:
         orm_mode = True
