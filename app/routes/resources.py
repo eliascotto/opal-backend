@@ -333,6 +333,24 @@ async def save_resource(
         crud.save_user_resource(db, resource_id=resource_id, user_id=user.id)
 
 
+@router.post("/{resource_id}/hide-saved", status_code=status.HTTP_204_NO_CONTENT)
+async def hide_saved_resource(
+    resource_id: str,
+    hidden: bool = True,
+    db: Session = Depends(get_db),
+    user: schemas.User = Depends(get_active_user)
+):
+    db_resource = crud.get_resource(db, resource_id=resource_id)
+    if not db_resource or db_resource.hidden:
+        raise HTTPException(status_code=404, detail="Resource not found")
+
+    db_res_saved = crud.get_saved_resource(db, resource_id=resource_id, user_id=user.id)
+    if not db_res_saved:
+        raise HTTPException(status_code=404, detail="Resource has not been saved yet")
+
+    crud.set_saved_resource_private(db, resource_id=resource_id, user_id=user.id, private=hidden)
+
+
 @router.post(
     "/{resource_id}/register-vote",
     response_model=schemas.Article,
