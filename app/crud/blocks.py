@@ -4,6 +4,7 @@ from sqlalchemy import func
 from fastapi.encoders import jsonable_encoder
 from typing import List
 
+from ..utils import get_count
 from .. import schemas
 from ..models import Block, Article
 
@@ -107,11 +108,6 @@ def shift_blocks_position(db: Session, position: int, decrement: bool=False):
 
 
 def get_blocks_count_by_article(db, article_id: str):
-    def get_count(q):
-        count_q = q.statement.with_only_columns([func.count()]).order_by(None)
-        count = q.session.execute(count_q).scalar()
-        return count
-
     q = (
         db
         .query(Block.id)

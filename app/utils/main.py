@@ -1,6 +1,7 @@
 import uuid
 from slugify import slugify
 from secrets import token_urlsafe
+from sqlalchemy import func
 
 
 def generate_uuid():
@@ -30,3 +31,9 @@ def generate_rand_id():
     Return a base64 url safe id of 12 char
     """
     return token_urlsafe(9)
+
+
+def get_count(q):
+        count_q = q.statement.with_only_columns([func.count()]).order_by(None)
+        count = q.session.execute(count_q).scalar()
+        return count

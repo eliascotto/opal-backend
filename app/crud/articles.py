@@ -1,8 +1,9 @@
 from datetime import datetime
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
+from typing import Optional
 
-from ..utils import generate_rand_id
+from ..utils import generate_rand_id, get_count
 from .. import schemas
 from ..models import (
     Article, ResourcesSaved,
@@ -106,29 +107,61 @@ def get_user_external_articles(
 def get_user_notes_articles(
     db: Session,
     user_id: int,
+    filter_str: Optional[str],
     skip: int = 0,
     limit: int = 100,
     filter_user: bool = False
 ):
-    conditions = [
-        ResourcesSaved.user_id == user_id,
-        Resource.id == ResourcesSaved.resource_id,
-        Note.id == Resource.resource_id,
-        Article.id == Note.article_id,
-    ]
-
-    if filter_user:
-        conditions.append(ResourcesSaved.private == False)
-
-    return (
+    query = (
         db
         .query(Article, Note, Resource, ResourcesSaved)
-        .filter(*conditions)
+        .filter(
+            ResourcesSaved.user_id == user_id,
+            Resource.id == ResourcesSaved.resource_id,
+            Note.id == Resource.resource_id,
+            Article.id == Note.article_id
+        )
+    )
+
+    if filter_user:
+        query = query.filter(ResourcesSaved.private == False)
+
+    if filter_str:
+        query = query.filter(Article.title.ilike(f'%{filter_str}%'))
+
+    return (
+        query
         .order_by(ResourcesSaved.date.desc())
         .offset(skip)
         .limit(limit)
         .all()
     )
+
+
+def count_user_notes_articles(
+    db: Session,
+    user_id: int,
+    filter_str: Optional[str],
+    filter_user: bool = False
+):
+    query = (
+        db
+        .query(Article, Note, Resource, ResourcesSaved)
+        .filter(
+            ResourcesSaved.user_id == user_id,
+            Resource.id == ResourcesSaved.resource_id,
+            Note.id == Resource.resource_id,
+            Article.id == Note.article_id
+        )
+    )
+
+    if filter_user:
+        query = query.filter(ResourcesSaved.private == False)
+
+    if filter_str:
+        query = query.filter(Article.title.ilike(f'%{filter_str}%'))
+
+    return get_count(query)
 
 
 def get_article_excerpt(

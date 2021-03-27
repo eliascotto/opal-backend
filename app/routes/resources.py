@@ -401,6 +401,12 @@ async def get_user_resources(
             limit=limit,
             filter_private=user_not_valid
         )
+        db_articles_count = crud.count_filter_user_articles_tags(
+            db, user_id=user_id,
+            filter_str=match,
+            tags=tags,
+            filter_private=user_not_valid
+        )
     else:
         # filter all articles matching the string
         db_articles = crud.filter_user_articles(
@@ -410,26 +416,36 @@ async def get_user_resources(
             limit=limit,
             filter_private=user_not_valid
         )
+        db_articles_count = crud.count_filter_user_articles(
+            db, user_id=user_id,
+            filter_str=match,
+            filter_private=user_not_valid
+        )
 
     exs = get_articles_excerpts(db, db_articles)
 
-    if match:
-        db_note_articles = []
-        nts = []
-    else:
-        # all article
-        db_note_articles = crud.get_user_notes_articles(
-            db,
-            user_id=user_id,
-            skip=skip,
-            limit=limit,
-            filter_user=user_not_valid
-        )
-        nts = get_articles_excerpts(db, db_note_articles)
+    # all article
+    db_note_articles = crud.get_user_notes_articles(
+        db, user_id=user_id,
+        filter_str=match,
+        skip=skip,
+        limit=limit,
+        filter_user=user_not_valid
+    )
+    db_note_count = crud.count_user_notes_articles(
+        db, user_id=user_id,
+        filter_str=match,
+        filter_user=user_not_valid
+    )
+    nts = get_articles_excerpts(db, db_note_articles)
 
     return {
         "externals": [db_articles, exs],
-        "notes": [db_note_articles, nts]
+        "notes": [db_note_articles, nts],
+        "info": {
+            "external_count": db_articles_count,
+            "notes_count": db_note_count
+        }
     }
 
 
