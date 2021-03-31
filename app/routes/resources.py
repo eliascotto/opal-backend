@@ -26,7 +26,7 @@ router = APIRouter(
 )
 
 
-@router.get("/{resource_id}")
+@router.get("/{resource_id}", response_model=schemas.FullResource)
 async def get_resource(
     resource_id: str,
     db: Session = Depends(get_db),
@@ -38,6 +38,13 @@ async def get_resource(
 
     db_count_saved = crud.count_saved_resouce(db, resource_id=resource_id)
 
+    votes = crud.get_votes_count(db, resource_id=resource_id)
+
+    if user:
+        user_vote = crud.get_vote(db, user_id=user.id, resource_id=resource_id)
+    else:
+        user_vote = None
+
     if db_resource.type == "note":
         # note
         db_note_article = crud.get_note_article(db, note_id=db_resource.resource_id)
@@ -46,7 +53,12 @@ async def get_resource(
             # check private note
             raise HTTPException(status_code=401, detail="User not allowed")
 
-        model = schemas.FullResource(content=db_note_article, saved_count=db_count_saved)
+        model = schemas.FullResource(
+            content=db_note_article,
+            saved_count=db_count_saved,
+            votes=votes,
+            user_vote=user_vote
+        )
     else:
         # external article
         db_ext_res_article = crud.get_external_resource_article(
@@ -60,9 +72,20 @@ async def get_resource(
             # if the current user is logged, provide information about the saved resource
             db_saved = crud.get_saved_resource(db, resource_id=resource_id, user_id=user.id)
 
-            model = schemas.FullResource(content=db_ext_res_article, saved=db_saved, saved_count=db_count_saved)
+            model = schemas.FullResource(
+                content=db_ext_res_article,
+                saved=db_saved,
+                saved_count=db_count_saved,
+                votes=votes,
+                user_vote=user_vote
+            )
         else:
-            model = schemas.FullResource(content=db_ext_res_article, saved_count=db_count_saved)
+            model = schemas.FullResource(
+                content=db_ext_res_article,
+                saved_count=db_count_saved,
+                votes=votes,
+                user_vote=user_vote
+            )
 
     return model
 
@@ -106,6 +129,19 @@ async def get_resource_article_exceprt(resource_id: str,
     return schema
 
 
+@router.post("externals/tweet")
+async def create_tweet(
+    tweet_url: str,
+    db: Session = Depends(get_db),
+    user: schemas.User = Depends(get_active_user)
+):
+    match = utils.match_twitter_status_url(tweet_url=tweet_url)
+    if not match:
+        raise HTTPException(status_code=406, detail="Tweet status not valid")
+
+    return utils.save_tweet(db, tweet_url=tweet_url, user=user)
+
+
 @router.post("/externals/new", status_code=status.HTTP_201_CREATED)
 async def create_extenal_resource(
     url: str,
@@ -124,7 +160,8 @@ async def create_extenal_resource(
 @router.get("/{resource_id}/notes", response_model=List[schemas.ArticleNoteWithExcerpt])
 async def get_resource_notes(
     resource_id: str,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    user = Depends(get_user_or_none)
 ):
     db_resource = crud.get_resource(db, resource_id=resource_id)
     if not db_resource or db_resource.hidden:
@@ -139,11 +176,21 @@ async def get_resource_notes(
         article_excerpt = crud.get_article_excerpt(db, article_id=note.article_id, limit=6)
         article_excerpt_blocks = [a[1] for a in article_excerpt]
 
+        resource = crud.get_resource_from_resourceid(db, resource_id=note.id)
+        votes = crud.get_votes_count(db, resource_id=resource.id)
+
+        if user:
+            user_vote = crud.get_vote(db, user_id=user.id, resource_id=resource.id)
+        else:
+            user_vote = None
+
         schema = schemas.ArticleNoteWithExcerpt(
             note=note,
             article=article,
             user=user,
-            blocks=article_excerpt_blocks
+            blocks=article_excerpt_blocks,
+            votes=votes,
+            user_vote=user_vote
         )
         notes_with_excerpt.append(schema)
 
@@ -352,18 +399,23 @@ async def hide_saved_resource(
 
 
 @router.post(
-    "/{resource_id}/register-vote",
+    "/{resource_id}/vote",
     response_model=schemas.Article,
     status_code=status.HTTP_201_CREATED
 )
 async def save_vote(
     resource_id: str,
+    unvote: bool = Query(False),
     db: Session = Depends(get_db),
     user: schemas.User = Depends(get_active_user)
 ):
     db_resource = crud.get_resource(db, resource_id=resource_id)
     if not db_resource or db_resource.hidden:
         raise HTTPException(status_code=404, detail="Resource not found")
+
+    if unvote:
+        # delete vote
+        return crud.delete_vote(db, user_id=user.id, resource_id=resource_id)
 
     vote = crud.get_vote(db, user_id=user.id, resource_id=resource_id)
     if vote:
@@ -372,7 +424,7 @@ async def save_vote(
             detail="Vote already present"
         )
 
-    vote_schema = crud.create_vote_schema(user_id=user.id, resource_id=resource_id)
+    vote_schema = schemas.VoteCreate(user_id=user.id, resource_id=resource_id)
     crud.create_vote(db, vote=vote_schema)
 
 

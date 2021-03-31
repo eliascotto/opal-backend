@@ -10,3 +10,4 @@ from .external_resource import *
 from .resource_tag import *
 from .resource_saved import *
 from .resource_visited import *
+from .tweet import *

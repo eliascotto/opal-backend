@@ -97,8 +97,7 @@ def count_filter_user_articles(
         .filter(
             ResourcesSaved.user_id == user_id,
             ResourcesSaved.resource_id == Resource.id,
-            Resource.resource_id == ExternalResource.id,
-            ExternalResource.article_id == Article.id
+            Resource.resource_id == ExternalResource.id
         )
     )
 

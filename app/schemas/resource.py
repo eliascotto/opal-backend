@@ -9,6 +9,7 @@ from .external_resource import ExternalResource, ExternalResourceRestricted
 from .resource_saved import ResourceSaved
 from .block import Block
 from .user import UserRestricted
+from .vote import Vote
 
 
 class ResourceBase(BaseModel):
@@ -32,6 +33,8 @@ class FullResource(BaseModel):
     content: Tuple[Union[Note, ExternalResourceRestricted], Article]
     saved: Optional[ResourceSaved] = None
     saved_count: int
+    votes: int
+    user_vote: Optional[Vote]
 
 
 class ResourceMentions(BaseModel):

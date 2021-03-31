@@ -9,7 +9,7 @@ class ExternalResourceBase(BaseModel):
     imported_by: constr(max_length=12)
     type: constr(max_length=15)
     raw: Optional[str]
-    article_id: constr(max_length=12)
+    article_id: Optional[constr(max_length=12)]
 
 
 class ExternalResourceCreate(ExternalResourceBase):
@@ -28,7 +28,7 @@ class ExternalResourceRestricted(BaseModel):
     id: constr(max_length=12)
     url: str
     type: constr(max_length=15)
-    article_id: constr(max_length=12)
+    article_id: Optional[constr(max_length=12)]
 
     class Config:
         orm_mode = True

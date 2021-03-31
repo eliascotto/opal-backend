@@ -37,6 +37,13 @@ class Tag(Base):
     name = Column(String(50), nullable=False)
 
 
+class Tweet(Base):
+    __tablename__ = 'tweets'
+
+    resource_id = Column(String(12), nullable=False)
+    id = Column(BigInteger, primary_key=True)
+
+
 class User(Base):
     __tablename__ = 'users'
 
@@ -49,8 +56,16 @@ class User(Base):
     last_login = Column(DateTime(True), nullable=False)
     blocked = Column(Boolean, nullable=False)
     image = Column(String)
-    plan = Column(SmallInteger, nullable=False)
-    onboard = Column(Boolean, nullable=False)
+    plan = Column(SmallInteger, nullable=False, server_default=text("0"))
+    onboard = Column(Boolean, nullable=False, server_default=text("false"))
+
+
+class Video(Base):
+    __tablename__ = 'videos'
+
+    url = Column(String, primary_key=True, nullable=False)
+    title = Column(String(150), primary_key=True, nullable=False)
+    author = Column(String, nullable=False)
 
 
 class Block(Base):
@@ -78,7 +93,7 @@ class ExternalResource(Base):
     imported_by = Column(ForeignKey('users.id'), nullable=False)
     type = Column(String(15), nullable=False)
     raw = Column(Text)
-    article_id = Column(String(12), nullable=False)
+    article_id = Column(String(12))
     date = Column(DateTime(True), nullable=False, server_default=text("now()"))
 
     user = relationship('User')
@@ -137,10 +152,10 @@ class Vote(Base):
     __tablename__ = 'votes'
 
     user_id = Column(ForeignKey('users.id', ondelete='CASCADE'), primary_key=True, nullable=False)
-    resource_id = Column(ForeignKey('articles.id', ondelete='CASCADE'), primary_key=True, nullable=False)
+    resource_id = Column(ForeignKey('resources.id', ondelete='CASCADE'), primary_key=True, nullable=False)
     date = Column(DateTime(True), nullable=False, server_default=text("now()"))
 
-    resource = relationship('Article')
+    resource = relationship('Resource')
     user = relationship('User')
 
 

@@ -6,6 +6,7 @@ from typing_extensions import Literal
 from .article import Article
 from .block import Block
 from .user import UserRestricted
+from .vote import Vote
 
 
 class NoteBase(BaseModel):
@@ -43,3 +44,5 @@ class ArticleNoteWithExcerpt(BaseModel):
     article: Article
     user: UserRestricted
     blocks: List[Block]
+    votes: int
+    user_vote: Optional[Vote]

@@ -41,7 +41,6 @@ async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
     try:
         # Validate.
         valid = validate_email(user.email)
-
         # Update with the normalized form.
         user.email  = valid.email
     except EmailNotValidError as e:

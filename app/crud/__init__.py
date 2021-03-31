@@ -11,3 +11,4 @@ from .resources_tags import *
 from .resources_visited import *
 from .resources import *
 from .external_resources import *
+from .tweets import *
