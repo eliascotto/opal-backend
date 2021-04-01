@@ -1,6 +1,7 @@
 import re
 import tweepy
 from sqlalchemy.orm import Session
+from typing import Dict
 
 from config import (
     TWITTER_API_KEY,
@@ -14,6 +15,12 @@ from .resource import store_resource, store_external_resource
 
 TWITTER_R = r'^https?:\/\/twitter\.com\/(?:#!\/)?(\w+)\/status(es)?\/(\d+)'
 
+
+def check_url_tweet(url: str):
+    print(type(url))
+    return re.match(TWITTER_R, url)
+
+
 def get_tweet(tweet_id: int):
     auth = tweepy.OAuthHandler(TWITTER_API_KEY, TWITTER_API_KEY_SECRET)
     auth.set_access_token(TWITTER_ACCESS_TOKEN, TWITTER_ACCESS_TOKEN_SECRET)
@@ -24,7 +31,7 @@ def get_tweet(tweet_id: int):
 
     info = {
         "text": status.full_text,
-        "author": status.author,
+        "author": status.author._json,
         "entities": status.entities,
     }
 
@@ -34,14 +41,8 @@ def get_tweet(tweet_id: int):
     return info
 
 
-def match_twitter_status_url(tweet_url: str):
-    return re.match(TWITTER_R, tweet_url)
-
-
 def get_tweet_id(tweet_url: str):
-    match = re.match(TWITTER_R, tweet_url)
-
-    print(match)
+    match = check_url_tweet(url=tweet_url)
 
     if match:
         return match.groups()[2]
@@ -64,10 +65,11 @@ def store_external_resource(db: Session, url: str, raw: str, user_id: str):
     return new_ext_resource
 
 
-def create_tweet_scheme(tweet_id: int, resource_id: str):
+def create_tweet_scheme(tweet_id: int, tweet_info: Dict, resource_id: str):
     return schemas.TweetCreate(
         id=tweet_id,
-        resource_id=resource_id
+        resource_id=resource_id,
+        content=tweet_info
     )
 
 
@@ -99,7 +101,11 @@ def save_tweet(db: Session, tweet_url: str, user: schemas.User):
         user_id=user.id
     )
 
-    tweet_scheme = create_tweet_scheme(tweet_id=tweet_id, resource_id=tweet_ext_resource.id)
+    tweet_scheme = create_tweet_scheme(
+        tweet_id=tweet_id,
+        tweet_info=tweet_info,
+        resource_id=tweet_ext_resource.id
+    )
 
     tweet = crud.create_tweet(db, tweet=tweet_scheme)
 
@@ -108,7 +114,11 @@ def save_tweet(db: Session, tweet_url: str, user: schemas.User):
     crud.save_user_resource(db, resource_id=resource.id, user_id=user.id)
 
     return {
-        "tweet": tweet,
+        "tweet": tweet_scheme,
         "resource": tweet_ext_resource,
     }
 
+
+def clean_tweet_object(tweet_obj):
+    tweet_obj.id = str(tweet_obj.id)
+    return tweet_obj

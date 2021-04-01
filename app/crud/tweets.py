@@ -22,3 +22,11 @@ def get_tweet(db: Session, tweet_id: int):
         .first()
     )
 
+
+def get_tweet_by_resource_id(db: Session, resource_id: str):
+    return (
+        db
+        .query(Tweet)
+        .filter(Tweet.resource_id == resource_id)
+        .first()
+    )

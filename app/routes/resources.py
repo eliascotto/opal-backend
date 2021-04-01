@@ -47,24 +47,32 @@ async def get_resource(
 
     if db_resource.type == "note":
         # note
-        db_note_article = crud.get_note_article(db, note_id=db_resource.resource_id)
+        db_note = crud.get_note(db, note_id=db_resource.resource_id)
+        db_article = crud.get_article(db, article_id=db_note.article_id)
 
-        if db_note_article[0].private and (db_note_article[1].author != user.id or user is None):
+        if db_note.private and (db_article.author != user.id or user is None):
             # check private note
             raise HTTPException(status_code=401, detail="User not allowed")
 
         model = schemas.FullResource(
-            content=db_note_article,
+            resource=db_note,
+            content=db_article,
             saved_count=db_count_saved,
             votes=votes,
             user_vote=user_vote
         )
     else:
         # external article
-        db_ext_res_article = crud.get_external_resource_article(
+        db_ext_res = crud.get_external_resource(
             db,
             ext_resource_id=db_resource.resource_id
         )
+        
+        if db_ext_res.type == 'tweet':
+            db_content = crud.get_tweet_by_resource_id(db, resource_id=db_ext_res.id)
+            db_content = utils.clean_tweet_object(db_content)
+        else:
+            db_content = crud.get_article(db, article_id=db_ext_res.article_id)
 
         # we create a schemas to contain multiple models;
         # ExternalResource, Article, Optional[SavedResource]
@@ -73,7 +81,8 @@ async def get_resource(
             db_saved = crud.get_saved_resource(db, resource_id=resource_id, user_id=user.id)
 
             model = schemas.FullResource(
-                content=db_ext_res_article,
+                resource=db_ext_res,
+                content=db_content,
                 saved=db_saved,
                 saved_count=db_count_saved,
                 votes=votes,
@@ -81,7 +90,8 @@ async def get_resource(
             )
         else:
             model = schemas.FullResource(
-                content=db_ext_res_article,
+                resource=db_ext_res,
+                content=db_content,
                 saved_count=db_count_saved,
                 votes=votes,
                 user_vote=user_vote
@@ -129,13 +139,13 @@ async def get_resource_article_exceprt(resource_id: str,
     return schema
 
 
-@router.post("externals/tweet")
+@router.post("/externals/tweet")
 async def create_tweet(
     tweet_url: str,
     db: Session = Depends(get_db),
     user: schemas.User = Depends(get_active_user)
 ):
-    match = utils.match_twitter_status_url(tweet_url=tweet_url)
+    match = utils.check_url_tweet(url=tweet_url)
     if not match:
         raise HTTPException(status_code=406, detail="Tweet status not valid")
 
@@ -459,6 +469,21 @@ async def get_user_resources(
             tags=tags,
             filter_private=user_not_valid
         )
+        db_tweets = crud.filter_user_tweets_tags(
+            db, user_id=user_id,
+            filter_str=match,
+            tags=tags,
+            skip=skip,
+            limit=limit,
+            filter_private=user_not_valid
+        )
+        db_tweets_count = crud.count_filter_user_tweets_tags(
+            db, user_id=user_id,
+            filter_str=match,
+            tags=tags,
+            filter_private=user_not_valid
+        )
+        db_tweets = clean_tweets_resources(db_tweets)
     else:
         # filter all articles matching the string
         db_articles = crud.filter_user_articles(
@@ -473,8 +498,23 @@ async def get_user_resources(
             filter_str=match,
             filter_private=user_not_valid
         )
+        db_tweets = crud.filter_user_tweets(
+            db, user_id=user_id,
+            filter_str=match,
+            skip=skip,
+            limit=limit,
+            filter_private=user_not_valid
+        )
+        db_tweets_count = crud.count_filter_user_tweets(
+            db, user_id=user_id,
+            filter_str=match,
+            filter_private=user_not_valid
+        )
+        db_tweets = clean_tweets_resources(db_tweets)
 
     exs = get_articles_excerpts(db, db_articles)
+    # merge all the resources together
+    db_articles = merge_resources_lists(db_articles, db_tweets)
 
     # all article
     db_note_articles = crud.get_user_notes_articles(
@@ -495,7 +535,7 @@ async def get_user_resources(
         "externals": [db_articles, exs],
         "notes": [db_note_articles, nts],
         "info": {
-            "external_count": db_articles_count,
+            "external_count": db_articles_count + db_tweets_count,
             "notes_count": db_note_count
         }
     }
@@ -511,3 +551,20 @@ def get_articles_excerpts(db: Session, resources):
         excerpts.append([block[1] for block in article_excerpt])
 
     return excerpts
+
+
+def merge_resources_lists(db_articles, db_tweets):
+    return sorted(db_articles + db_tweets, key=lambda x: x[3].date, reverse=True) 
+
+
+def clean_tweets_resources(resources):
+    cleaned = []
+
+    for res in resources:
+        tw = res[0]
+        cln = utils.clean_tweet_object(tw)
+
+        res_tuple = sum(((cln,), res[1:]), ())
+        cleaned.append(res_tuple)
+
+    return cleaned

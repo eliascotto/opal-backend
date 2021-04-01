@@ -40,8 +40,9 @@ class Tag(Base):
 class Tweet(Base):
     __tablename__ = 'tweets'
 
-    resource_id = Column(String(12), nullable=False)
     id = Column(BigInteger, primary_key=True)
+    resource_id = Column(String(12), nullable=False)
+    content = Column(JSONB(astext_type=Text()), nullable=False)
 
 
 class User(Base):

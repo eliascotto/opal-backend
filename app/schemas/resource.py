@@ -10,6 +10,7 @@ from .resource_saved import ResourceSaved
 from .block import Block
 from .user import UserRestricted
 from .vote import Vote
+from .tweet import Tweet
 
 
 class ResourceBase(BaseModel):
@@ -30,7 +31,8 @@ class Resource(ResourceBase):
 
 
 class FullResource(BaseModel):
-    content: Tuple[Union[Note, ExternalResourceRestricted], Article]
+    resource: Union[Note, ExternalResourceRestricted]
+    content: Union[Article, Tweet]
     saved: Optional[ResourceSaved] = None
     saved_count: int
     votes: int
