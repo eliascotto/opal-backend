@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from typing import List, Optional
 from email_validator import validate_email, EmailNotValidError
 
-from .. import crud, schemas
+from .. import crud, schemas, utils
 from ..database import get_db, engine
 from ..security import (
     authenticate_user,
@@ -38,6 +38,12 @@ async def read_user(user_id: str, db: Session = Depends(get_db)):
 
 @router.post("/new", response_model=schemas.User)
 async def create_user(user: schemas.UserCreate, db: Session = Depends(get_db)):
+    if user.name in ['home', 'login', 'signup', '_app', '_document', 'index']:
+        raise HTTPException(status_code=400, detail="Username not valid")
+
+    if not utils.check_username(user.name):
+        raise HTTPException(status_code=400, detail="Username not valid")
+    
     try:
         # Validate.
         valid = validate_email(user.email)
