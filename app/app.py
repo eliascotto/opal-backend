@@ -21,7 +21,7 @@ from .security import (
     get_active_user,
     create_access_token
 )
-from . import crud, schemas, models
+from . import crud, schemas, models, utils
 from .routes import (
     users,
     resources,
@@ -99,3 +99,8 @@ async def login(
         )
     access_token = create_access_token(form_data.username)
     return { "access_token": access_token, "token_type": "bearer" }
+
+
+@app.post("/feedback", status_code=status.HTTP_204_NO_CONTENT)
+async def send_feedback(feedback: schemas.Feedback, user = Depends(get_active_user)):
+    utils.send_feedback(content=feedback.content, user=user)

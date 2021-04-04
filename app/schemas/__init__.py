@@ -11,3 +11,4 @@ from .resource_tag import *
 from .resource_saved import *
 from .resource_visited import *
 from .tweet import *
+from .feedback import *
