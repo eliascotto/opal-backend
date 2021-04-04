@@ -28,12 +28,36 @@ async def read_current_user(user: schemas.User = Depends(get_active_user)):
     return user
 
 
+@router.get("/list", response_model=List[schemas.User])
+async def read_list_of_users(db: Session = Depends(get_db)):
+    # called only at build time by Next.js for SSG
+    return crud.get_all_users(db)
+
+
 @router.get("/{user_id}", response_model=schemas.UserRestricted)
 async def read_user(user_id: str, db: Session = Depends(get_db)):
     db_user = crud.get_user(db, user_id=user_id)
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
     return db_user
+
+
+@router.get("/name/{user_name}", response_model=schemas.UserInfo)
+async def read_user(user_name: str, db: Session = Depends(get_db)):
+    db_user = crud.get_user_by_name(db, user_name=user_name)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    db_count_saved = crud.count_saved_resources_by_user(db, user_id=db_user.id)
+    db_count_notes = crud.count_all_notes_by_user(db, user_id=db_user.id, private=False)
+    
+    return {
+        "user": db_user,
+        "info": {
+            "resources_count": db_count_saved,
+            "notes_count": db_count_notes
+        }
+    }
 
 
 @router.post("/new", response_model=schemas.User)

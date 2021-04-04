@@ -85,6 +85,19 @@ def get_all_notes_by_user(db: Session, user_id: str):
     )
 
 
+def count_all_notes_by_user(db: Session, user_id: str, private: bool = False):
+    return (
+        db
+        .query(Note, Article)
+        .filter(
+            Article.author == user_id,
+            Note.article_id == Article.id,
+            Note.private == private
+        )
+        .count()
+    ) 
+
+
 def set_note_private(db: Session, note_id: str, private: bool):
     (
         db

@@ -36,7 +36,7 @@ async def get_resource(
     if not db_resource or db_resource.hidden:
         raise HTTPException(status_code=404, detail="Resource not found")
 
-    db_count_saved = crud.count_saved_resouce(db, resource_id=resource_id)
+    db_count_saved = crud.count_saved_resouces(db, resource_id=resource_id)
 
     votes = crud.get_votes_count(db, resource_id=resource_id)
 
@@ -439,7 +439,7 @@ async def save_vote(
 
 
 @router.get("/user/{user_id}")
-async def get_user_resources(
+async def get_user_resources_by_id(
     user_id: str,
     match: Optional[str] = Query(None),
     tags: Optional[List[str]] = Query(None),
@@ -452,11 +452,56 @@ async def get_user_resources(
     if not db_user:
         raise HTTPException(status_code=404, detail="User not found")
 
-    user_not_valid = (user is None) or (user.id != user_id)
+    return get_user_resources(
+        db_user=db_user,
+        match=match,
+        tags=tags,
+        skip=skip,
+        limit=limit,
+        user=user,
+        db=db
+    )
+
+
+@router.get("/user/name/{user_name}")
+async def get_user_resources_by_name(
+    user_name: str,
+    match: Optional[str] = Query(None),
+    tags: Optional[List[str]] = Query(None),
+    skip: int = 0,
+    limit: int = 100,
+    user = Depends(get_user_or_none),
+    db: Session = Depends(get_db)
+):
+    db_user = crud.get_user_by_name(db, user_name=user_name)
+    if not db_user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return get_user_resources(
+        db_user=db_user,
+        match=match,
+        tags=tags,
+        skip=skip,
+        limit=limit,
+        user=user,
+        db=db
+    )
+
+
+def get_user_resources(
+    db_user: schemas.User,
+    match: Optional[str],
+    tags: Optional[List[str]],
+    skip: int,
+    limit: int,
+    user: Optional[schemas.User],
+    db: Session,
+):
+    user_not_valid = (user is None) or (user.id != db_user.id)
 
     if tags:
         db_articles = crud.filter_user_articles_tags(
-            db, user_id=user_id,
+            db, user_id=db_user.id,
             filter_str=match,
             tags=tags,
             skip=skip,
@@ -464,13 +509,13 @@ async def get_user_resources(
             filter_private=user_not_valid
         )
         db_articles_count = crud.count_filter_user_articles_tags(
-            db, user_id=user_id,
+            db, user_id=db_user.id,
             filter_str=match,
             tags=tags,
             filter_private=user_not_valid
         )
         db_tweets = crud.filter_user_tweets_tags(
-            db, user_id=user_id,
+            db, user_id=db_user.id,
             filter_str=match,
             tags=tags,
             skip=skip,
@@ -478,7 +523,7 @@ async def get_user_resources(
             filter_private=user_not_valid
         )
         db_tweets_count = crud.count_filter_user_tweets_tags(
-            db, user_id=user_id,
+            db, user_id=db_user.id,
             filter_str=match,
             tags=tags,
             filter_private=user_not_valid
@@ -487,26 +532,26 @@ async def get_user_resources(
     else:
         # filter all articles matching the string
         db_articles = crud.filter_user_articles(
-            db, user_id=user_id,
+            db, user_id=db_user.id,
             filter_str=match,
             skip=skip,
             limit=limit,
             filter_private=user_not_valid
         )
         db_articles_count = crud.count_filter_user_articles(
-            db, user_id=user_id,
+            db, user_id=db_user.id,
             filter_str=match,
             filter_private=user_not_valid
         )
         db_tweets = crud.filter_user_tweets(
-            db, user_id=user_id,
+            db, user_id=db_user.id,
             filter_str=match,
             skip=skip,
             limit=limit,
             filter_private=user_not_valid
         )
         db_tweets_count = crud.count_filter_user_tweets(
-            db, user_id=user_id,
+            db, user_id=db_user.id,
             filter_str=match,
             filter_private=user_not_valid
         )
@@ -518,14 +563,14 @@ async def get_user_resources(
 
     # all article
     db_note_articles = crud.get_user_notes_articles(
-        db, user_id=user_id,
+        db, user_id=db_user.id,
         filter_str=match,
         skip=skip,
         limit=limit,
         filter_user=user_not_valid
     )
     db_note_count = crud.count_user_notes_articles(
-        db, user_id=user_id,
+        db, user_id=db_user.id,
         filter_str=match,
         filter_user=user_not_valid
     )

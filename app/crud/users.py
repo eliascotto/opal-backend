@@ -76,6 +76,14 @@ def get_users(db: Session, skip: int = 0, limit: int = 100):
     )
 
 
+def get_all_users(db: Session):
+    return (
+        db
+        .query(User)
+        .all()
+    )
+
+
 def set_user_onboard(db: Session, user_id: int, onboard: bool = True):
     (
         db

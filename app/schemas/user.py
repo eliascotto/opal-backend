@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List, Optional, Dict
 from datetime import datetime
 from pydantic import BaseModel, EmailStr, constr
 
@@ -32,6 +32,14 @@ class UserRestricted(BaseModel):
     name: constr(max_length=30)
     display_name: constr(max_length=100)
     image: Optional[str]
+
+    class Config:
+        orm_mode = True
+
+
+class UserInfo(BaseModel):
+    user: UserRestricted
+    info: Dict
 
     class Config:
         orm_mode = True

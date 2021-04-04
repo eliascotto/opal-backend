@@ -47,7 +47,7 @@ def get_saved_resource(db: Session, resource_id: str, user_id: str):
     )
 
 
-def count_saved_resouce(db: Session, resource_id: str):
+def count_saved_resouces(db: Session, resource_id: str):
     return (
         db
         .query(ResourcesSaved)
@@ -74,6 +74,18 @@ def get_saved_by_user(db: Session, user_id: str):
         .query(ResourcesSaved)
         .filter(ResourcesSaved.user_id == user_id)
         .all()
+    )
+
+
+def count_saved_resources_by_user(db: Session, user_id: str, active_user: bool = False):
+    return (
+        db
+        .query(ResourcesSaved)
+        .filter(
+            ResourcesSaved.user_id == user_id,
+            ResourcesSaved.private == active_user,
+        )
+        .count()
     )
 
 
