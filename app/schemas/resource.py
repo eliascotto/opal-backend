@@ -31,7 +31,9 @@ class Resource(ResourceBase):
 
 
 class FullResource(BaseModel):
-    resource: Union[Note, ExternalResourceRestricted]
+    resource_id: constr(max_length=12)
+    type: constr(max_length=20)
+    resource: Union[ExternalResourceRestricted, Note]
     content: Union[Article, Tweet]
     saved: Optional[ResourceSaved] = None
     saved_count: int
@@ -44,3 +46,12 @@ class ResourceMentions(BaseModel):
     user: UserRestricted
     article: Article
     blocks: List[Block]
+
+
+class ResourceLite(BaseModel):
+    content: Union[Article, Tweet]
+    resource_id: str
+    type: constr(max_length=20)
+    votes: int
+    saved_count: int
+    saved: Optional[ResourceSaved] = None

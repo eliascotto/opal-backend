@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 
@@ -30,12 +30,50 @@ async def get_note(
     if not db_note_art:
         raise HTTPException(status_code=404, detail="Note not found")
 
-    [db_note, db_article] = db_note_art
+    [db_note, db_article, db_resource] = db_note_art
 
     if db_note.private and (not user or user.id != db_article.author):
         raise HTTPException(status_code=403, detail="Note is private")
 
-    return schemas.FullNote(note=db_note, article=db_article)
+    return schemas.FullNote(note=db_note, article=db_article, resource_id=db_resource.id)
+
+
+@router.post(
+    "/new",
+    response_model=schemas.FullNote,
+    status_code=status.HTTP_201_CREATED
+)
+async def add_note(
+    article: schemas.ArticleCreate,
+    resource_id: str = Query(None),
+    db: Session = Depends(get_db),
+    user: schemas.User = Depends(get_active_user)
+):
+    """
+    Create a new note, with or without `resource_id` as a source
+    """
+    if resource_id:
+        if len(resource_id) != 12:
+            raise HTTPException(status_code=404, detail="Resource id field not valid")
+
+        # check if source-resource is present
+        db_resource = crud.get_resource(db, resource_id=resource_id)
+        if not db_resource or db_resource.hidden:
+            raise HTTPException(status_code=404, detail="Resource not found")
+
+    # 1. create new article
+    db_article = crud.create_article_with_user(db, article=article, user_id=user.id)
+
+    # 2. create new note (default Private=False)
+    db_note = crud.create_note_params(db, source_id=resource_id, article_id=db_article.id)
+
+    # 3. create new resource as a note
+    db_resource_new = crud.create_resource_params(db, resource_type="note", resource_id=db_note.id)
+
+    # 4. save user resource
+    crud.save_user_resource(db, resource_id=db_resource_new.id, user_id=user.id)
+
+    return schemas.FullNote(note=db_note, article=db_article, resource_id=db_resource_new.id)
 
 
 @router.post("/{note_id}/set", response_model=schemas.Note)

@@ -35,3 +35,8 @@ class BlockUpdate(BaseModel):
     list: Optional[constr(max_length=1)]
     properties: Optional[Dict]
     content: Optional[List[Dict]]
+
+
+class BlockResourceId(BaseModel):
+    block: Block
+    resource_id: str

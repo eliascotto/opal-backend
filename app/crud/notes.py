@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from ..utils import generate_rand_id
 from .. import schemas
-from ..models import Note, Article, User
+from ..models import Note, Article, User, Resource
 from .articles import generate_article_id
 
 
@@ -50,10 +50,11 @@ def get_note(db: Session, note_id: str):
 def get_note_article(db: Session, note_id: str):
     return (
         db
-        .query(Note, Article)
+        .query(Note, Article, Resource)
         .filter(
             Note.id == note_id,
-            Article.id == Note.article_id
+            Article.id == Note.article_id,
+            Resource.resource_id == Note.id
         )
         .first()
     )

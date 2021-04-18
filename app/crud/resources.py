@@ -4,7 +4,14 @@ from sqlalchemy.orm import Session
 
 from ..utils import generate_rand_id
 from .. import schemas
-from ..models import Resource, Article, Note, Block, User
+from ..models import (
+    Resource,
+    Article,
+    ExternalResource,
+    Note,
+    Block,
+    User
+)
 
 
 def generate_resource_id(db: Session):
@@ -67,3 +74,30 @@ def get_resource_mentions(db: Session, resource_id: str, url: str):
         )
         .all()
     )
+
+
+def get_resource_by_article(db: Session, article_id: str):
+    db_ext = (
+        db
+        .query(Resource, ExternalResource, Article)
+        .filter(
+            Article.id == article_id,
+            ExternalResource.article_id == Article.id,
+            Resource.resource_id == ExternalResource.id
+        )
+        .first()
+    )
+
+    if len(db_ext) == 0:
+        return (
+            db
+            .query(Resource, Note, Article)
+            .filter(
+                Article.id == article_id,
+                Note.article_id == Article.id,
+                Resource.resource_id == Note.id
+            )
+            .first()
+        )
+    else:
+        return db_ext

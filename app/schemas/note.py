@@ -10,7 +10,7 @@ from .vote import Vote
 
 
 class NoteBase(BaseModel):
-    source_id: constr(max_length=12)
+    source_id: Optional[constr(max_length=12)]
     article_id: constr(max_length=12)
     private: bool = False
 
@@ -37,6 +37,7 @@ class NoteWithExcerpt(NoteBase):
 class FullNote(BaseModel):
     note: Note
     article: Article
+    resource_id: str
 
 
 class ArticleNoteWithExcerpt(BaseModel):

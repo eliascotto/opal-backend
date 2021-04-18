@@ -515,6 +515,7 @@ export default class Readability {
         curTitle = this._getInnerText(hOnes[0]);
     }
 
+    // /\s{2,}/g
     curTitle = curTitle.trim().replace(this.REGEXPS.normalize, " ");
 
     // Who added this magic? Based on what?

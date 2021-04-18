@@ -1,14 +1,14 @@
 from datetime import datetime
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
-from typing import Optional
+from typing import Optional, List
 
 from ..utils import generate_rand_id, get_count
 from .. import schemas
 from ..models import (
     Article, ResourcesSaved,
     Resource, ExternalResource,
-    Note, Block,
+    Note, Block, ResourcesTag, Tag,
 )
 
 
@@ -136,6 +136,80 @@ def get_user_notes_articles(
         .limit(limit)
         .all()
     )
+
+
+def get_user_notes_articles_tags(
+    db: Session,
+    user_id: int,
+    filter_str: Optional[str],
+    tags: List[str],
+    skip: int = 0,
+    limit: int = 100,
+    filter_user: bool = False
+):
+    query = (
+        db
+        .query(Article, Note, Resource, ResourcesSaved,  ResourcesTag, Tag)
+        .filter(
+            ResourcesSaved.user_id == user_id,
+            Resource.id == ResourcesSaved.resource_id,
+            Note.id == Resource.resource_id,
+            Article.id == Note.article_id,
+            ResourcesTag.user_id == user_id,
+            ResourcesTag.resource_id == Resource.id,
+            Tag.id == ResourcesTag.tag_id
+        )
+    )
+
+    if filter_user:
+        query = query.filter(ResourcesSaved.private == False)
+
+    for tag in tags:
+        query = query.filter(Tag.name.ilike(f'%{tag}%'))
+
+    if filter_str:
+        query = query.filter(Article.title.ilike(f'%{filter_str}%'))
+
+    return (
+        query
+        .order_by(ResourcesSaved.date.desc())
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
+def count_user_notes_articles_tags(
+    db: Session,
+    user_id: int,
+    filter_str: Optional[str],
+    tags: List[str],
+    filter_user: bool = False
+):
+    query = (
+        db
+        .query(Article, Note, Resource, ResourcesSaved, ResourcesTag, Tag)
+        .filter(
+            ResourcesSaved.user_id == user_id,
+            Resource.id == ResourcesSaved.resource_id,
+            Note.id == Resource.resource_id,
+            Article.id == Note.article_id,
+            ResourcesTag.user_id == user_id,
+            ResourcesTag.resource_id == Resource.id,
+            Tag.id == ResourcesTag.tag_id
+        )
+    )
+
+    if filter_user:
+        query = query.filter(ResourcesSaved.private == False)
+
+    for tag in tags:
+        query = query.filter(Tag.name.ilike(f'%{tag}%'))
+
+    if filter_str:
+        query = query.filter(Article.title.ilike(f'%{filter_str}%'))
+
+    return get_count(query)
 
 
 def count_user_notes_articles(

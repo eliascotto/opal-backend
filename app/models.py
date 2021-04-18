@@ -104,7 +104,7 @@ class Note(Base):
     __tablename__ = 'notes'
 
     id = Column(String(12), primary_key=True)
-    source_id = Column(ForeignKey('resources.id'), nullable=False)
+    source_id = Column(ForeignKey('resources.id'))
     article_id = Column(ForeignKey('articles.id'), nullable=False)
     private = Column(Boolean, nullable=False)
 

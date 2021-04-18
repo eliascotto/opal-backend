@@ -55,6 +55,8 @@ async def get_resource(
             raise HTTPException(status_code=401, detail="User not allowed")
 
         model = schemas.FullResource(
+            type=db_resource.type,
+            resource_id=resource_id,
             resource=db_note,
             content=db_article,
             saved_count=db_count_saved,
@@ -81,6 +83,8 @@ async def get_resource(
             db_saved = crud.get_saved_resource(db, resource_id=resource_id, user_id=user.id)
 
             model = schemas.FullResource(
+                type=db_resource.type,
+                resource_id=resource_id,
                 resource=db_ext_res,
                 content=db_content,
                 saved=db_saved,
@@ -90,6 +94,8 @@ async def get_resource(
             )
         else:
             model = schemas.FullResource(
+                type=db_resource.type,
+                resource_id=resource_id,
                 resource=db_ext_res,
                 content=db_content,
                 saved_count=db_count_saved,
@@ -240,37 +246,6 @@ async def get_resource_mentions(resource_id: str, db: Session = Depends(get_db))
         mentions.append(schema)
 
     return mentions
-
-
-@router.post(
-    "/{resource_id}/notes/new",
-    response_model=schemas.FullNote,
-    status_code=status.HTTP_201_CREATED
-)
-async def add_note(
-    resource_id: str,
-    article: schemas.ArticleCreate,
-    db: Session = Depends(get_db),
-    user: schemas.User = Depends(get_active_user)
-):
-    # check if source-resource is present
-    db_resource = crud.get_resource(db, resource_id=resource_id)
-    if not db_resource or db_resource.hidden:
-        raise HTTPException(status_code=404, detail="Resource not found")
-
-    # 1. create new article
-    db_article = crud.create_article_with_user(db, article=article, user_id=user.id)
-
-    # 2. create new note (default Private=False)
-    db_note = crud.create_note_params(db, source_id=resource_id, article_id=db_article.id)
-
-    # 3. create new resource as a note
-    db_resource = crud.create_resource_params(db, resource_type="note", resource_id=db_note.id)
-
-    # 4. save user resource
-    crud.save_user_resource(db, resource_id=db_resource.id, user_id=user.id)
-
-    return schemas.FullNote(note=db_note, article=db_article)
 
 
 @router.get("/{resource_id}/tags", response_model=List[schemas.ResourceTagFull])
@@ -438,6 +413,152 @@ async def save_vote(
     crud.create_vote(db, vote=vote_schema)
 
 
+@router.get("/user/{user_id}/lite")
+async def get_get_user_resources_lite(
+    user_id: str,
+    resources_type: str = "external",
+    match: Optional[str] = Query(None),
+    tags: Optional[List[str]] = Query(None),
+    skip: int = 0,
+    limit: int = 100,
+    user = Depends(get_active_user),
+    db: Session = Depends(get_db)
+):
+    """
+    user is active for the moment so not necessary to filter for private
+    this lite version return only articles with some information
+    no full resources, no excerpts
+    also has the ability to distinguish between external_articles or notes
+    """
+    if resources_type == "external":
+        if tags:
+            db_articles = crud.filter_user_articles_tags(
+                db, user_id=user.id,
+                filter_str=match,
+                tags=tags,
+                skip=skip,
+                limit=limit
+            )
+            db_articles_count = crud.count_filter_user_articles_tags(
+                db, user_id=user.id,
+                filter_str=match,
+                tags=tags
+            )
+            db_tweets = crud.filter_user_tweets_tags(
+                db, user_id=user.id,
+                filter_str=match,
+                tags=tags,
+                skip=skip,
+                limit=limit
+            )
+            db_tweets_count = crud.count_filter_user_tweets_tags(
+                db, user_id=user.id,
+                filter_str=match,
+                tags=tags
+            )
+            db_tweets = clean_tweets_resources(db_tweets)
+        else:
+            # filter all articles matching the string
+            db_articles = crud.filter_user_articles(
+                db, user_id=user.id,
+                filter_str=match,
+                skip=skip,
+                limit=limit
+            )
+            db_articles_count = crud.count_filter_user_articles(
+                db, user_id=user.id,
+                filter_str=match
+            )
+            db_tweets = crud.filter_user_tweets(
+                db, user_id=user.id,
+                filter_str=match,
+                skip=skip,
+                limit=limit
+            )
+            db_tweets_count = crud.count_filter_user_tweets(
+                db, user_id=user.id,
+                filter_str=match
+            )
+            db_tweets = clean_tweets_resources(db_tweets)
+
+        # merge all the resources together
+        db_merged = merge_resources_lists(db_articles, db_tweets)
+
+        # create a list of restrictred resources
+        resources = []
+        for res in db_merged:
+            content = res[0]
+            external = res[1]
+            resource = res[2]
+            saved = res[3]
+
+            saved_count = crud.count_saved_resouces(db, resource_id=resource.id)
+            votes = crud.get_votes_count(db, resource_id=resource.id)
+
+            resources.append(schemas.ResourceLite(
+                content=content,
+                type=external.type,
+                votes=votes,
+                saved_count=saved_count,
+                saved=saved,
+                resource_id=resource.id
+            ))
+        
+        resources_dict = {
+            "resources": resources,
+            "count": db_articles_count + db_tweets_count
+        }
+    else:
+        if tags:
+            db_note_articles = crud.get_user_notes_articles_tags(
+                db, user_id=user.id,
+                filter_str=match,
+                tags=tags,
+                skip=skip,
+                limit=limit
+            )
+            db_note_count = crud.count_user_notes_articles_tags(
+                db, user_id=user.id,
+                tags=tags,
+                filter_str=match
+            )
+        else:
+            db_note_articles = crud.get_user_notes_articles(
+                db, user_id=user.id,
+                filter_str=match,
+                skip=skip,
+                limit=limit
+            )
+            db_note_count = crud.count_user_notes_articles(
+                db, user_id=user.id,
+                filter_str=match
+            )
+
+        # create a list of restrictred resources
+        resources = []
+        for res in db_note_articles:
+            content = res[0]
+            resource = res[2]
+
+            saved_count = crud.count_saved_resouces(db, resource_id=resource.id)
+            votes = crud.get_votes_count(db, resource_id=resource.id)
+
+            resources.append(schemas.ResourceLite(
+                content=content,
+                type="article", # notes are articles by default
+                votes=votes,
+                saved_count=saved_count,
+                resource_id=resource.id
+            ))
+
+        resources_dict = {
+            "resources": resources,
+            "count": db_note_count
+        }
+
+    return resources_dict
+
+
 @router.get("/user/{user_id}")
 async def get_user_resources_by_id(
     user_id: str,
@@ -561,7 +682,7 @@ def get_user_resources(
     # merge all the resources together
     db_articles = merge_resources_lists(db_articles, db_tweets)
 
-    # all article
+    # all notes
     db_note_articles = crud.get_user_notes_articles(
         db, user_id=db_user.id,
         filter_str=match,
