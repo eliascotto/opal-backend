@@ -35,15 +35,15 @@ React frontend tested with Chrome/Firefox/Safari, Python backend, Node.js servic
 - React Hooks data fatching and caching - [SWR](https://swr.vercel.app/)
 - Styling - [styled-components](https://styled-components.com/)
 
-## Backend
+### Backend
 - Python Framework - [FastAPI](https://fastapi.tiangolo.com/)
 - ORM - [SQLAlchemy](https://www.sqlalchemy.org/)
 
-## Markdown Articles Service
+### Markdown Articles Service
 - Node [node.js](https://nodejs.org/en/)
 - Custom version of [Mozilla readability library](https://github.com/mozilla/readability)
 
-## Databse
+### Databse
 - [PostgreSQL](https://www.postgresql.org/)
 
 ## Development
