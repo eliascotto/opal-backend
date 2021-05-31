@@ -43,7 +43,7 @@ React frontend tested with Chrome/Firefox/Safari, Python backend, Node.js servic
 - Node [node.js](https://nodejs.org/en/)
 - Custom version of [Mozilla readability library](https://github.com/mozilla/readability)
 
-### Databse
+### Database
 - [PostgreSQL](https://www.postgresql.org/)
 
 ## Development
